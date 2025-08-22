@@ -1,195 +1,457 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>بازی پنالتی کارتونی</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>پنالتی کارتونی — Single Player</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Tahoma, Arial;
-      background: #0d1b2a;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    :root{
+      --bg:#0c1b2a;        /* تیره مثل تصویر */
+      --panel:#0f253a;
+      --accent:#2bdcff;    /* آبی سوئیچ */
+      --pitch-dark:#16733f;/* خطوط زمین */
+      --pitch-light:#1a8a4b;
+      --goal:#ffffff;
+      --frame:#f0c22e;     /* تیرک زرد کارتونی */
+      --text:#e8f3ff;
+      --muted:#a6c3d9;
+      --ball:#ffffff;
+      --net:#7bd2ac;
     }
-    .hidden { display: none; }
-    .menu { text-align: center; }
-    .menu input {
-      padding: 10px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--text); font-family: Vazirmatn, IRANSans, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
     }
-    .menu button {
-      padding: 10px 20px;
-      margin-top: 10px;
-      font-size: 18px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      background: #00b4d8;
-      color: white;
-    }
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px;
-      background: #1b263b;
-      border-radius: 0 0 15px 15px;
-    }
-    canvas {
-      display: block;
-      margin: 20px auto;
-      background: repeating-linear-gradient(
-        #2d6a4f, #2d6a4f 40px,
-        #40916c 40px, #40916c 80px
+    .wrap{max-width:1200px; margin:0 auto; padding:16px}
+    header{display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:10px}
+    .title{font-weight:800; font-size:24px}
+    .hud{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .chip{background:var(--panel); color:var(--text); border:1px solid rgba(255,255,255,.08); padding:8px 12px; border-radius:14px; font-weight:700}
+    .chip .label{opacity:.8; font-weight:600; margin-left:6px}
+    .btn{cursor:pointer; background:transparent; border:1px solid rgba(255,255,255,.2); color:var(--text); padding:8px 14px; border-radius:12px; font-weight:700}
+    .btn:hover{background:rgba(255,255,255,.06)}
+
+    /* کانتینر زمین بازی */
+    .stage {
+      background:linear-gradient(
+        180deg,
+        var(--pitch-light) 0%, var(--pitch-light) 10%,
+        var(--pitch-dark) 10%, var(--pitch-dark) 20%,
+        var(--pitch-light) 20%, var(--pitch-light) 30%,
+        var(--pitch-dark) 30%, var(--pitch-dark) 40%,
+        var(--pitch-light) 40%, var(--pitch-light) 50%,
+        var(--pitch-dark) 50%, var(--pitch-dark) 60%,
+        var(--pitch-light) 60%, var(--pitch-light) 70%,
+        var(--pitch-dark) 70%, var(--pitch-dark) 80%,
+        var(--pitch-light) 80%, var(--pitch-light) 90%,
+        var(--pitch-dark) 90%, var(--pitch-dark) 100%
       );
-      border: 4px solid white;
-      border-radius: 15px;
+      border-radius:18px; border:1px solid rgba(0,0,0,.35);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35) inset;
+      position:relative;
+      height:62vh; /* واکنش‌گرا */
+      min-height:420px; max-height:760px;
+      overflow:hidden;
     }
+    /* کَندوایس */
+    canvas{ display:block; width:100%; height:100%; }
+    /* یادداشت پایین */
+    .hint{color:var(--muted); text-align:center; opacity:.9; font-size:13px; margin-top:8px}
+
+    /* مودال نام بازیکن */
+    .modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(12,27,42,.8); backdrop-filter: blur(2px);}
+    .card{width:min(520px,92vw); background:#0f2234; border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:18px; box-shadow:0 20px 50px rgba(0,0,0,.45)}
+    .card h3{margin:0 0 8px 0}
+    .row{display:flex; gap:8px; margin-top:10px}
+    input[type="text"]{flex:1; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.2); background:#0b1827; color:var(--text); outline:none}
+    .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:10px}
+
+    /* بنر نتیجه */
+    .result{position:absolute; top:12px; left:12px; background:rgba(15,34,52,.85); border:1px solid rgba(255,255,255,.18); padding:10px 12px; border-radius:12px; display:none}
+    .toast{position:absolute; right:12px; top:12px; background:rgba(15,34,52,.92); border:1px solid rgba(255,255,255,.12); padding:10px 12px; border-radius:12px; display:none}
+
+    /* سوئیچ کارتونی گوشه عنوان */
+    .dot{width:28px; height:28px; border-radius:8px; background:var(--accent); display:inline-block}
+    @media (max-width:640px){.title{font-size:18px}}
   </style>
 </head>
 <body>
-  <div id="menu" class="menu">
-    <h1>بازی پنالتی کارتونی</h1>
-    <input type="text" id="playerName" placeholder="اسم بازیکن را وارد کنید">
-    <button id="startBtn">شروع بازی</button>
+  <div class="wrap">
+    <header>
+      <div class="title">پنالتی کارتونی — <span style="font-weight:600">Single Player</span> <span class="dot" aria-hidden="true"></span></div>
+      <div class="hud">
+        <button class="btn" id="restartBtn">شروع مجدد</button>
+        <div class="chip"><span class="label">گل:</span> <span id="goals">0</span></div>
+        <div class="chip"><span class="label">شوت:</span> <span id="shots">0/5</span></div>
+        <div class="chip"><span class="label">بازیکن:</span> <span id="playerLabel">—</span></div>
+      </div>
+    </header>
+
+    <div class="stage">
+      <canvas id="field" width="1280" height="720" aria-label="زمین بازی"></canvas>
+      <div class="result" id="resultBox"></div>
+      <div class="toast" id="toast"></div>
+    </div>
+    <div class="hint">روی توپ انگشت/ماوس را نگه‌دار، بکش و رها کن تا همان سمت شوت بره (موبایل و دسکتاپ).</div>
   </div>
 
-  <div id="gameArea" class="hidden">
-    <div class="top-bar">
-      <span id="playerLabel"></span>
-      <span id="scoreLabel">گل: 0</span>
-      <span id="chanceLabel">شوت: 0/5</span>
-      <button id="restartBtn">شروع مجدد</button>
+  <!-- مودال نام -->
+  <div class="modal" id="nameModal">
+    <div class="card">
+      <h3>نام بازیکن</h3>
+      <p style="margin:0;color:var(--muted)">برای شروع بازی، اسمت رو وارد کن.</p>
+      <div class="row">
+        <input id="playerName" type="text" maxlength="24" placeholder="مثلاً آرش" />
+      </div>
+      <div class="actions">
+        <button class="btn" id="startGame">شروع بازی</button>
+      </div>
     </div>
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
   </div>
 
   <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    // ——————————————————————
+    // تنظیمات اصلی
+    // ——————————————————————
+    const canvas = document.getElementById('field');
+    const ctx = canvas.getContext('2d');
 
-    let playerName = "";
-    let ball = { x: 400, y: 450, r: 15, dx: 0, dy: 0, inAir: false };
-    let chances = 5;
-    let goals = 0;
+    const goalsEl = document.getElementById('goals');
+    const shotsEl = document.getElementById('shots');
+    const playerLabel = document.getElementById('playerLabel');
+    const resultBox = document.getElementById('resultBox');
+    const toast = document.getElementById('toast');
 
-    let goal = { x: 300, y: 50, w: 200, h: 50 };
+    const restartBtn = document.getElementById('restartBtn');
 
-    function drawBall() {
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-      ctx.fillStyle = "white";
-      ctx.fill();
-      ctx.stroke();
+    // ابعاد هندسی (نسبی به اندازه بوم)
+    let W = canvas.width, H = canvas.height;
+
+    const state = {
+      player: '',
+      shots: 0,
+      maxShots: 5,
+      goals: 0,
+      phase: 'aim', // aim | flight | end
+      aimStart: null,
+      ball: { x: W/2, y: H-80, r: 14, vx:0, vy:0, moving:false},
+      // دروازه
+      goal: {
+        left: W*0.33, right: W*0.67, lineY: H*0.23, depth: 100, postW: 16, barY: H*0.23 + 24
+      }
+    };
+
+    function resizeCanvas() {
+      // بوم ثابت پیکسل برای فیزیک، CSS سایزش را تطبیق می‌دهد
+      // (اگر خواستی، می‌شود با devicePixelRatio هم بهبود داد)
     }
 
-    function drawGoal() {
-      ctx.strokeStyle = "white";
+    // ——————————————————————
+    // رسم زمین، دروازه و توپ
+    // ——————————————————————
+    function drawField(){
+      ctx.clearRect(0,0,W,H);
+      // خط محوطه و دروازه کارتونی شبیه تصویر
+      const g = state.goal;
+
+      // محوطه شش قدم/دروازه (قاب سفید)
       ctx.lineWidth = 4;
-      ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(goal.x, goal.y, goal.w, 10); // تیر افقی
-      ctx.fillRect(goal.x, goal.y, 10, goal.h); // تیرک چپ
-      ctx.fillRect(goal.x + goal.w - 10, goal.y, 10, goal.h); // تیرک راست
-    }
+      ctx.strokeStyle = getRGBA('--goal', 1);
+      const boxW = (g.right-g.left)+120;
+      const boxL = g.left-60;
+      const boxT = g.lineY-40;
+      const boxH = 220;
+      rectStroke(boxL, boxT, boxW, boxH);
 
-    function resetBall() {
-      ball.x = 400;
-      ball.y = 450;
-      ball.dx = 0;
-      ball.dy = 0;
-      ball.inAir = false;
-    }
+      // تور
+      drawNet(g.left+g.postW, g.lineY+g.postW, g.right-g.postW*2, 120);
 
-    function update() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawGoal();
+      // چارچوب زرد
+      ctx.fillStyle = getRGBA('--frame',1);
+      // تیرک‌ها
+      ctx.fillRect(g.left, g.lineY, g.postW, 120);
+      ctx.fillRect(g.right-g.postW, g.lineY, g.postW, 120);
+      // تیر افقی (کراس‌بار)
+      ctx.fillRect(g.left, g.lineY, (g.right-g.left), g.postW);
+
+      // نقطه پنالتی
+      ctx.beginPath();
+      ctx.arc(W/2, H-120, 3, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,.8)';
+      ctx.fill();
+
+      // توپ
       drawBall();
 
-      if (ball.inAir) {
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-
-        // برخورد با دروازه (گل شدن)
-        if (
-          ball.x > goal.x &&
-          ball.x < goal.x + goal.w &&
-          ball.y - ball.r < goal.y + goal.h &&
-          ball.y > goal.y
-        ) {
-          goals++;
-          chances--;
-          updateLabels();
-          ball.inAir = false;
-          setTimeout(resetBall, 800);
-        }
-
-        // بیرون رفتن توپ
-        if (ball.y < 0 || ball.x < 0 || ball.x > canvas.width) {
-          chances--;
-          updateLabels();
-          ball.inAir = false;
-          setTimeout(resetBall, 800);
-        }
+      // راهنمای نشانه‌گیری
+      if(state.phase==='aim' && state.aimStart){
+        drawAimGuide();
       }
-
-      // پایان بازی
-      if (chances <= 0) {
-        ctx.font = "40px Arial";
-        ctx.fillStyle = "yellow";
-        ctx.fillText("پایان بازی! گل‌ها: " + goals, 200, 250);
-
-        // ارسال نتیجه به Google Sheets
-        fetch("YOUR_GOOGLE_SCRIPT_URL_HERE", {
-          method: "POST",
-          body: JSON.stringify({ name: playerName, goals: goals }),
-          headers: { "Content-Type": "application/json" }
-        }).then(res => console.log("نتیجه ارسال شد:", res.status));
-
-        return;
-      }
-
-      requestAnimationFrame(update);
     }
 
-    function updateLabels() {
-      document.getElementById("scoreLabel").innerText = "گل: " + goals;
-      document.getElementById("chanceLabel").innerText = "شوت: " + (5 - chances) + "/5";
+    function drawNet(x,y,w,h){
+      ctx.save();
+      ctx.globalAlpha = .9;
+      ctx.strokeStyle = getRGBA('--net',.9);
+      ctx.lineWidth = 2;
+      for(let i=0;i<=w;i+=20){
+        ctx.beginPath(); ctx.moveTo(x+i,y); ctx.lineTo(x+i,y+h); ctx.stroke();
+      }
+      for(let j=0;j<=h;j+=20){
+        ctx.beginPath(); ctx.moveTo(x,y+j); ctx.lineTo(x+w,y+j); ctx.stroke();
+      }
+      ctx.restore();
     }
 
-    canvas.addEventListener("click", () => {
-      if (!ball.inAir && chances > 0) {
-        let angle = Math.atan2(goal.y - ball.y, goal.x + goal.w / 2 - ball.x);
-        ball.dx = Math.cos(angle) * 8;
-        ball.dy = Math.sin(angle) * 8;
-        ball.inAir = true;
+    function drawBall(){
+      const b = state.ball;
+      // سایه
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y+b.r, b.r*1.1, b.r*0.5, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,0,0,.25)';
+      ctx.fill();
+
+      // توپ سفید
+      ctx.beginPath();
+      ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.fillStyle = getRGBA('--ball',1);
+      ctx.fill();
+
+      // لکه‌های شش‌ضلعی ساده کارتونی
+      ctx.strokeStyle = 'rgba(0,0,0,.25)';
+      ctx.lineWidth = 1.5;
+      for(let i=0;i<6;i++){
+        ctx.beginPath();
+        ctx.arc(b.x + Math.cos(i)*6, b.y + Math.sin(i)*6, 4, 0, Math.PI*2);
+        ctx.stroke();
       }
+    }
+
+    function drawAimGuide(){
+      const start = state.aimStart;
+      const b = state.ball;
+      const dx = start.x - b.x;
+      const dy = start.y - b.y;
+      const mx = b.x - dx; // نقطه هدف بصورت آینه‌ای
+      const my = b.y - dy;
+
+      ctx.save();
+      ctx.setLineDash([8,8]);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,255,255,.8)';
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(mx, my); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(mx, my, 6, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+
+    function rectStroke(x,y,w,h){ ctx.strokeRect(x,y,w,h); }
+    function getRGBA(varName, a){
+      const tmp = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      // فقط برای رنگ‌های #rrggbb ساده
+      const c = tmp.match(/#(..)(..)(..)/);
+      if(!c) return tmp;
+      const r=parseInt(c[1],16), g=parseInt(c[2],16), b=parseInt(c[3],16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
+    // ——————————————————————
+    // ورودی ماوس/لمسی
+    // ——————————————————————
+    function canvasPos(evt){
+      const rect = canvas.getBoundingClientRect();
+      const clientX = evt.touches? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches? evt.touches[0].clientY : evt.clientY;
+      // نسبت به اندازه CSS به پیکسل بوم
+      const x = (clientX - rect.left) * (canvas.width / rect.width);
+      const y = (clientY - rect.top) * (canvas.height / rect.height);
+      return {x,y};
+    }
+
+    function onStart(evt){
+      if(state.phase!=='aim') return;
+      const p = canvasPos(evt);
+      // بررسی نزدیک بودن به توپ (برای موبایل خوبه)
+      const b = state.ball; const d = Math.hypot(p.x-b.x, p.y-b.y);
+      if(d <= b.r*2.2){
+        state.aimStart = p;
+      }
+    }
+
+    function onMove(evt){
+      if(state.phase!=='aim' || !state.aimStart) return;
+      state.aimStart = canvasPos(evt);
+    }
+
+    function onEnd(evt){
+      if(state.phase!=='aim' || !state.aimStart) return;
+      const b = state.ball; const st = state.aimStart; state.aimStart = null;
+      // سرعت بر اساس کشیدن
+      let vx = (b.x - st.x) * 0.18; // میرایی
+      let vy = (b.y - st.y) * 0.18;
+      // محدودیت‌ها تا جهت بیشتر رو به بالا باشه
+      if(vy > -2) vy = -2; // حداقل به سمت بالا
+      const spd = Math.hypot(vx,vy);
+      const maxSpd = 22; if(spd>maxSpd){ vx*=maxSpd/spd; vy*=maxSpd/spd; }
+      shoot(vx,vy);
+    }
+
+    canvas.addEventListener('mousedown', onStart); canvas.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onEnd);
+    canvas.addEventListener('touchstart', (e)=>{onStart(e);});
+    canvas.addEventListener('touchmove', (e)=>{onMove(e); e.preventDefault();}, {passive:false});
+    canvas.addEventListener('touchend', (e)=>{onEnd(e);});
+
+    // ——————————————————————
+    // منطق شلیک و برخورد
+    // ——————————————————————
+    function shoot(vx,vy){
+      if(state.phase!=='aim') return;
+      state.phase = 'flight';
+      state.ball.vx = vx; state.ball.vy = vy; state.ball.moving = true;
+      animate();
+    }
+
+    function animate(){
+      const b = state.ball; const g = state.goal;
+      let raf;
+      const step = ()=>{
+        // حرکت ساده (بدون گرانش)
+        b.x += b.vx; b.y += b.vy;
+        // اصطکاک هوا
+        b.vx *= 0.995; b.vy *= 0.995;
+
+        // بررسی رویدادها (گل/تیرک/بیرون)
+        const outcome = checkOutcome();
+        drawField();
+        if(outcome){
+          state.ball.moving=false; state.phase='aim';
+          endShot(outcome);
+          cancelAnimationFrame(raf); return;
+        }
+
+        // اگر از بالای کادر رد شد و هنوز تصمیم نگرفتیم، بیرون
+        if(b.y < -20 || b.x < -20 || b.x > W+20 || b.y > H+20){
+          drawField();
+          endShot('بیرون'); cancelAnimationFrame(raf); return;
+        }
+
+        raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }
+
+    function checkOutcome(){
+      const b = state.ball; const g = state.goal;
+      // برخورد با تیر افقی
+      if(b.y <= g.lineY + g.postW && b.x >= g.left && b.x <= g.right){
+        // داخل چارچوب است؟
+        if(b.x > g.left + g.postW && b.x < g.right - g.postW){
+          // در محدوده تیر افقی
+          return 'به تیرک افقی خورد';
+        } else {
+          return 'به تیرک عمودی خورد';
+        }
+      }
+      // عبور از خط دروازه (گل)
+      if(b.y <= g.lineY && b.x >= g.left + g.postW && b.x <= g.right - g.postW){
+        return 'گل';
+      }
+      // برخورد به تیرک‌های عمودی در ارتفاع پایین‌تر
+      const inPostY = b.y >= g.lineY && b.y <= g.lineY + 120;
+      if(inPostY && (Math.abs(b.x - g.left) <= g.postW || Math.abs(b.x - g.right) <= g.postW)){
+        return 'به تیرک عمودی خورد';
+      }
+      return null;
+    }
+
+    function endShot(outcome){
+      state.shots++;
+      if(outcome==='گل') state.goals++;
+      showToast(outcome);
+      updateHud();
+
+      // توپ را برگردان پای نقطه پنالتی
+      state.ball.x = W/2; state.ball.y = H-80; state.ball.vx=0; state.ball.vy=0;
+
+      if(state.shots>=state.maxShots){
+        state.phase='end';
+        showResult();
+        submitScore();
+      }
+    }
+
+    function showToast(t){
+      toast.textContent = t;
+      toast.style.display = 'block';
+      setTimeout(()=> toast.style.display='none', 1200);
+    }
+
+    function showResult(){
+      resultBox.style.display='block';
+      resultBox.innerHTML = `
+        <div><strong>${state.player}</strong> عزیز!</div>
+        <div style="margin-top:6px">نتیجه‌ی تو: <strong>${state.goals}</strong> گل از <strong>${state.maxShots}</strong> شوت.</div>
+        <div class="actions" style="margin-top:10px">
+          <button class="btn" onclick="restart(true)">بازی جدید</button>
+        </div>
+      `;
+    }
+
+    function hideResult(){ resultBox.style.display='none'; }
+
+    function updateHud(){
+      goalsEl.textContent = state.goals;
+      shotsEl.textContent = `${state.shots}/${state.maxShots}`;
+      playerLabel.textContent = state.player || '—';
+    }
+
+    function restart(clearName=false){
+      hideResult();
+      state.shots = 0; state.goals = 0; state.phase='aim';
+      state.ball.x=W/2; state.ball.y=H-80; state.ball.vx=0; state.ball.vy=0;
+      if(clearName){ state.player=''; openNameModal(); }
+      updateHud(); drawField();
+    }
+
+    restartBtn.addEventListener('click', ()=> restart());
+
+    // ——————————————————————
+    // نام بازیکن
+    // ——————————————————————
+    const nameModal = document.getElementById('nameModal');
+    const playerNameInput = document.getElementById('playerName');
+    document.getElementById('startGame').addEventListener('click', ()=>{
+      const v = playerNameInput.value.trim(); if(!v){ playerNameInput.focus(); return; }
+      state.player = v; playerLabel.textContent = v; nameModal.style.display='none';
+      localStorage.setItem('last_player_name', v);
+      restart();
     });
 
-    document.getElementById("startBtn").addEventListener("click", () => {
-      playerName = document.getElementById("playerName").value.trim();
-      if (playerName === "") {
-        alert("لطفا اسم وارد کن!");
-        return;
-      }
-      document.getElementById("menu").classList.add("hidden");
-      document.getElementById("gameArea").classList.remove("hidden");
-      document.getElementById("playerLabel").innerText = "بازیکن: " + playerName;
-      update();
-    });
+    function openNameModal(){
+      nameModal.style.display='flex';
+      playerNameInput.value = localStorage.getItem('last_player_name')||'';
+      setTimeout(()=> playerNameInput.focus(), 50);
+    }
 
-    document.getElementById("restartBtn").addEventListener("click", () => {
-      goals = 0;
-      chances = 5;
-      resetBall();
-      updateLabels();
-      update();
-    });
+    // ——————————————————————
+    // ارسال نتیجه به سرور (اختیاری)
+    // ——————————————————————
+    async function submitScore(){
+      // آدرس API خودت را جایگزین کن
+      const endpoint = 'https://example.com/submit';
+      const payload = { name: state.player, goals: state.goals, shots: state.maxShots, when: new Date().toISOString() };
+      try{
+        // اگر سرور نداری، این fetch خطایی نمی‌دهد چون CORS ممکن است بلاک کند. فقط جهت نمایش try/catch گذاشته شده.
+        await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      }catch(err){
+        // می‌توانی این را لاگ نگیری؛ این فقط دمو است.
+        console.warn('ارسال نشد (دمو):', err);
+      }
+    }
+
+    // شروع
+    openNameModal();
+    updateHud(); drawField();
   </script>
 </body>
 </html>
