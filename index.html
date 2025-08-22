@@ -1,237 +1,125 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>Cartoon Penalty — بازی پنالتی کارتونی</title>
+  <meta charset="UTF-8">
+  <title>Penalty Game</title>
   <style>
-    :root{
-      --bg:#0f172a; --panel:#0b1220; --text:#e5e7eb; --muted:#94a3b8; --post:#ffd166;
-      --green1:#15803d; --green2:#166534; --cyan:#22d3ee; --border:rgba(255,255,255,.08);
-    }
-    html,body{height:100%;margin:0;background:radial-gradient(1100px 600px at 60% -10%, #17223f, var(--bg));color:var(--text);font-family:Vazirmatn,system-ui,sans-serif}
-    *{box-sizing:border-box}
-    .wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px}
-    header{width:100%;max-width:980px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#34d399,#60a5fa)}
-    h1{margin:0;font-size:clamp(18px,3vw,24px)}
-    .panel{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px;padding:12px 14px}
-    .hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .hud div{padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px dashed var(--border)}
-    .btn{cursor:pointer;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));color:var(--text);font-weight:600}
-    canvas{width:min(980px,92vw);height:calc(min(980px,92vw)*.56);max-height:74vh;background:#166534;border-radius:18px;border:2px solid var(--border);touch-action:none}
-    .legend{font-size:12px;color:var(--muted)}
-    .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,10,20,.65);backdrop-filter:blur(6px)}
-    .card{width:min(520px,94vw);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 60px rgba(0,0,0,.45)}
-    .card h2{margin:6px 0 8px}
-    .field{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-    label{font-size:14px;color:var(--muted)}
-    input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:#0b1220;color:var(--text)}
-    .toast{position:fixed;right:14px;bottom:14px;background:rgba(0,0,0,.65);color:#fff;border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:12px;opacity:0;transform:translateY(10px);transition:.25s}
-    .toast.show{opacity:1;transform:translateY(0)}
+    body { margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#4CAF50; }
+    canvas { background:#87CEEB; border:4px solid white; border-radius:15px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="brand"><div class="logo"></div><h1>پنالتی کارتونی — Single Player</h1></div>
-      <div class="panel hud" id="hud">
-        <div>بازیکن: <b id="playerNameHUD">—</b></div>
-        <div>شوت: <b id="shotHUD">0/5</b></div>
-        <div>گل: <b id="goalHUD">0</b></div>
-        <button class="btn" id="resetBtn">شروع مجدد</button>
-      </div>
-    </header>
-    <canvas id="game" width="980" height="550" aria-label="میدان بازی"></canvas>
-    <div class="legend">روی توپ انگشت/موس رو نگه‌دار، بکش و رها کن تا همون سمت شوت بره (موبایل و دسکتاپ).</div>
-  </div>
-
-  <!-- Start Overlay -->
-  <div class="overlay" id="startOverlay">
-    <div class="card">
-      <h2>شروع بازی</h2>
-      <p style="color:var(--muted);margin:0">نام خودت رو وارد کن و ۵ شوت بزن. نتیجه آخر نمایش داده میشه.</p>
-      <div class="field">
-        <label for="playerName">نام بازیکن</label>
-        <input id="playerName" maxlength="32" placeholder="مثلاً: آرش" />
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
-        <button class="btn" id="startBtn">شروع</button>
-        <span style="font-size:12px;color:var(--muted)">یا Enter</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Finish Overlay -->
-  <div class="overlay" id="finishOverlay" style="display:none">
-    <div class="card">
-      <h2>پایان بازی ✅</h2>
-      <p id="finalText" style="margin:.5rem 0 1rem;color:var(--muted)"></p>
-      <button class="btn" id="againBtn">بازی دوباره</button>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
   <script>
-    // ====== Helpers ======
-    const $ = (id) => document.getElementById(id);
-    const toast = (msg) => { const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._h); toast._h=setTimeout(()=>t.classList.remove("show"), 2000); };
-
-    // ====== Canvas & Field ======
-    const canvas = $("game");
+    const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    const FIELD = { w: canvas.width, h: canvas.height };
-    // دروازه بالا: تیر افقی در y=70، ارتفاع دهانه = postH
-    const GOAL = { x: FIELD.w/2 - 140, y: 70, w: 280, h: 10, postH: 90 };
+    let ball = { x: 400, y: 450, r: 15, dx: 0, dy: 0, inAir: false };
+    let chances = 5;
+    let goals = 0;
 
-    const ballStart = { x: FIELD.w/2, y: FIELD.h - 90 };
-    const ball = { x: ballStart.x, y: ballStart.y, r: 16, vx: 0, vy: 0, moving:false };
+    // دروازه
+    let goal = { x: 300, y: 50, w: 200, h: 50 };
 
-    let shots=0, goals=0, playerName="—";
-
-    // physics
-    const FRICTION = 0.992;
-    const BOUNCE   = 0.62;
-    const MAX_POWER= 16.5;
-
-    // input state
-    let dragging=false, aimStart=null, aimEnd=null;
-
-    // ====== Draw ======
-    function drawField(){
-      // grass gradient
-      const grad = ctx.createLinearGradient(0,0,0,FIELD.h);
-      grad.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--green1'));
-      grad.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--green2'));
-      ctx.fillStyle = grad; ctx.fillRect(0,0,FIELD.w,FIELD.h);
-
-      // faint stripes
-      ctx.globalAlpha=.07; for(let i=0;i<10;i++){ ctx.fillStyle=i%2?"#fff":"#000"; ctx.fillRect(0,i*55, FIELD.w, 28); } ctx.globalAlpha=1;
-
-      // boxes
-      ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth=3;
-      ctx.strokeRect(FIELD.w/2-220, 40, 440, 140);
-      ctx.strokeRect(FIELD.w/2-120, 40, 240, 60);
-
-      // goal posts & crossbar
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--post');
-      ctx.fillRect(GOAL.x-10, GOAL.y, 10, GOAL.postH);                  // left post
-      ctx.fillRect(GOAL.x+GOAL.w, GOAL.y, 10, GOAL.postH);              // right post
-      ctx.fillRect(GOAL.x-10, GOAL.y-10, GOAL.w+20, 10);                // crossbar
-
-      // net lines
-      ctx.strokeStyle = "rgba(255,255,255,.25)"; ctx.lineWidth=1;
-      for(let i=0;i<=GOAL.postH;i+=10){ ctx.beginPath(); ctx.moveTo(GOAL.x-10, GOAL.y+i); ctx.lineTo(GOAL.x+GOAL.w+10, GOAL.y+i); ctx.stroke(); }
-      for(let j=0;j<=GOAL.w+20;j+=18){ ctx.beginPath(); ctx.moveTo(GOAL.x-10+j, GOAL.y); ctx.lineTo(GOAL.x-10+j, GOAL.y+GOAL.postH); ctx.stroke(); }
-
-      // penalty spot
-      ctx.fillStyle="#e5e7eb"; ctx.beginPath(); ctx.arc(ballStart.x, ballStart.y+2, 3, 0, Math.PI*2); ctx.fill();
-
-      // HUD bubble on canvas
-      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(14,14,160,54);
-      ctx.fillStyle = "#fff"; ctx.font = "14px sans-serif"; ctx.fillText(`شوت: ${shots}/5`, 24, 38); ctx.fillText(`گل: ${goals}`, 24, 58);
+    // رسم توپ
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fillStyle = "white";
+      ctx.fill();
+      ctx.stroke();
     }
 
-    function drawBall(){
-      // shadow
-      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.beginPath(); ctx.ellipse(ball.x, ball.y+ball.r, ball.r*1.2, ball.r*.5, 0, 0, Math.PI*2); ctx.fill();
-      // ball
-      const g = ctx.createRadialGradient(ball.x-6, ball.y-6, 3, ball.x, ball.y, ball.r);
-      g.addColorStop(0, "#fff"); g.addColorStop(1, "#cbd5e1");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
-      // light seams
-      ctx.strokeStyle = "#0f172a"; ctx.globalAlpha=.35; ctx.lineWidth=2;
-      for(let i=0;i<5;i++){ const a=i*(Math.PI*2/5); ctx.beginPath(); ctx.moveTo(ball.x+Math.cos(a)*8, ball.y+Math.sin(a)*8); ctx.lineTo(ball.x+Math.cos(a+0.6)*8, ball.y+Math.sin(a+0.6)*8); ctx.stroke(); }
-      ctx.globalAlpha=1;
+    // رسم دروازه
+    function drawGoal() {
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+
+      // تیرک‌ها
+      ctx.fillStyle = "red";
+      ctx.fillRect(goal.x - 5, goal.y, 10, goal.h); // تیرک چپ
+      ctx.fillRect(goal.x + goal.w - 5, goal.y, 10, goal.h); // تیرک راست
+      ctx.fillRect(goal.x, goal.y - 5, goal.w, 10); // تیر افقی بالا
     }
 
-    function drawAim(){ if(!dragging||!aimStart||!aimEnd) return; ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--cyan'); ctx.lineWidth=2; ctx.setLineDash([6,6]); ctx.beginPath(); ctx.moveTo(aimStart.x,aimStart.y); ctx.lineTo(aimEnd.x,aimEnd.y); ctx.stroke(); ctx.setLineDash([]); }
+    // ریست توپ
+    function resetBall() {
+      ball.x = 400;
+      ball.y = 450;
+      ball.dx = 0;
+      ball.dy = 0;
+      ball.inAir = false;
+    }
 
-    // ====== Physics & Collisions ======
-    function resetBall(){ ball.x=ballStart.x; ball.y=ballStart.y; ball.vx=0; ball.vy=0; ball.moving=false; }
+    // آپدیت بازی
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGoal();
+      drawBall();
 
-    function kick(power){ if(ball.moving) return; ball.vx=Math.max(Math.min(power.x,MAX_POWER),-MAX_POWER); ball.vy=Math.max(Math.min(power.y,MAX_POWER),-MAX_POWER); ball.moving=true; shots++; updateHUD(); }
+      ctx.font = "20px Arial";
+      ctx.fillStyle = "white";
+      ctx.fillText("Goals: " + goals + " | Chances: " + chances, 20, 30);
 
-    function update(){
-      if(!ball.moving) return;
-      const prevX=ball.x, prevY=ball.y;
-      ball.x += ball.vx; ball.y += ball.vy;
-      ball.vx *= FRICTION; ball.vy *= FRICTION; ball.vy += 0.18; // gravity arc
+      if (ball.inAir) {
+        ball.x += ball.dx;
+        ball.y += ball.dy;
 
-      // walls
-      if(ball.x - ball.r < 0){ ball.x = ball.r; ball.vx *= -BOUNCE; }
-      if(ball.x + ball.r > FIELD.w){ ball.x = FIELD.w - ball.r; ball.vx *= -BOUNCE; }
-      if(ball.y - ball.r < 0){ ball.y = ball.r; ball.vy *= -BOUNCE; }
-      if(ball.y + ball.r > FIELD.h){ ball.y = FIELD.h - ball.r; ball.vy *= -BOUNCE; if(Math.abs(ball.vx)<0.25 && Math.abs(ball.vy)<0.35){ ball.moving=false; afterShot("اوت"); } }
-
-      // posts & crossbar rectangles
-      const leftPost  = { x: GOAL.x-10,      y: GOAL.y,    w:10,         h: GOAL.postH };
-      const rightPost = { x: GOAL.x+GOAL.w,  y: GOAL.y,    w:10,         h: GOAL.postH };
-      const crossbar  = { x: GOAL.x-10,      y: GOAL.y-10, w:GOAL.w+20,  h: 10 };
-
-      // circle-rect collision with bounce
-      [leftPost,rightPost,crossbar].forEach(rect=>{
-        const cx = Math.max(rect.x, Math.min(ball.x, rect.x+rect.w));
-        const cy = Math.max(rect.y, Math.min(ball.y, rect.y+rect.h));
-        const dx = ball.x - cx, dy = ball.y - cy; const dist2 = dx*dx+dy*dy;
-        if(dist2 < ball.r*ball.r){
-          const dist = Math.sqrt(dist2)||0.01; const nx = dx/dist, ny=dy/dist;
-          ball.x = cx + nx*(ball.r+0.5); ball.y = cy + ny*(ball.r+0.5);
-          const dot = ball.vx*nx + ball.vy*ny; ball.vx = (ball.vx - 2*dot*nx) * BOUNCE; ball.vy = (ball.vy - 2*dot*ny) * BOUNCE;
-          toast("به تیرک خورد! 🥅");
+        // برخورد با دروازه (گل)
+        if (
+          ball.x > goal.x &&
+          ball.x < goal.x + goal.w &&
+          ball.y - ball.r < goal.y + goal.h &&
+          ball.y > goal.y
+        ) {
+          goals++;
+          chances--;
+          ball.inAir = false;
+          setTimeout(resetBall, 1000);
         }
-      });
 
-      // goal check: segment crosses goal-line (y = GOAL.y + GOAL.postH) between posts and under crossbar
-      const goalLineY = GOAL.y + GOAL.postH;
-      const crossed = (prevY >= goalLineY - ball.r) && (ball.y < goalLineY - ball.r);
-      if(crossed && ball.x > GOAL.x && ball.x < GOAL.x + GOAL.w && ball.y > GOAL.y){
-        goals++; updateHUD(); ball.moving=false; toast("گللل! ⚽️"); afterShot("goal"); return;
+        // برخورد با تیرک‌ها
+        if (
+          (ball.x + ball.r > goal.x - 5 && ball.x - ball.r < goal.x + 5 && ball.y < goal.y + goal.h) ||
+          (ball.x + ball.r > goal.x + goal.w - 5 && ball.x - ball.r < goal.x + goal.w + 5 && ball.y < goal.y + goal.h) ||
+          (ball.y - ball.r < goal.y && ball.x > goal.x && ball.x < goal.x + goal.w)
+        ) {
+          chances--;
+          ball.inAir = false;
+          setTimeout(resetBall, 1000);
+        }
+
+        // بیرون رفتن
+        if (ball.y < 0 || ball.x < 0 || ball.x > canvas.width) {
+          chances--;
+          ball.inAir = false;
+          setTimeout(resetBall, 1000);
+        }
       }
 
-      // out of screen just in case
-      if(ball.y + ball.r < -50 || ball.y - ball.r > FIELD.h + 60){ ball.moving=false; afterShot("اوت"); }
-    }
-
-    function afterShot(){
-      if(shots >= 5){
-        setTimeout(()=>{ $("finishOverlay").style.display='flex'; $("finalText").textContent = `${playerName} — گل‌ها: ${goals} از ۵ شوت`; }, 450);
+      // پایان بازی
+      if (chances <= 0) {
+        ctx.font = "40px Arial";
+        ctx.fillStyle = "yellow";
+        ctx.fillText("Game Over! Goals: " + goals, 200, 250);
       } else {
-        setTimeout(()=> resetBall(), 380);
+        requestAnimationFrame(update);
       }
     }
 
-    function render(){ ctx.clearRect(0,0,FIELD.w,FIELD.h); drawField(); drawBall(); drawAim(); }
-    function loop(){ update(); render(); requestAnimationFrame(loop); } requestAnimationFrame(loop);
+    // شوت با کلیک
+    canvas.addEventListener("click", () => {
+      if (!ball.inAir && chances > 0) {
+        let angle = Math.atan2(goal.y - ball.y, goal.x + goal.w / 2 - ball.x);
+        ball.dx = Math.cos(angle) * 8;
+        ball.dy = Math.sin(angle) * 8;
+        ball.inAir = true;
+      }
+    });
 
-    function updateHUD(){ $("shotHUD").textContent=`${shots}/5`; $("goalHUD").textContent=`${goals}`; $("playerNameHUD").textContent=playerName; }
-
-    // ====== Input ======
-    function getPos(e){ const r=canvas.getBoundingClientRect(); if(e.touches&&e.touches[0]) return { x:(e.touches[0].clientX-r.left)*(canvas.width/r.width), y:(e.touches[0].clientY-r.top)*(canvas.height/r.height) }; return { x:(e.clientX-r.left)*(canvas.width/r.width), y:(e.clientY-r.top)*(canvas.height/r.height) }; }
-    function onDown(e){ const p=getPos(e); const dx=p.x-ball.x, dy=p.y-ball.y; if(dx*dx+dy*dy <= ball.r*ball.r*1.5){ dragging=true; aimStart={x:ball.x,y:ball.y}; aimEnd=p; } }
-    function onMove(e){ if(dragging){ aimEnd=getPos(e); e.preventDefault(); } }
-    function onUp(){ if(dragging){ dragging=false; const power={ x:(aimEnd.x-aimStart.x)/8, y:(aimEnd.y-aimStart.y)/8 }; kick(power); aimStart=aimEnd=null; } }
-
-    canvas.addEventListener('mousedown', onDown); canvas.addEventListener('mousemove', onMove); canvas.addEventListener('mouseup', onUp);
-    canvas.addEventListener('touchstart', onDown, {passive:false}); canvas.addEventListener('touchmove', onMove, {passive:false}); canvas.addEventListener('touchend', onUp);
-
-    // ====== UI ======
-    $("resetBtn").addEventListener('click', ()=>{ shots=0; goals=0; resetBall(); updateHUD(); toast("ریست شد"); });
-    $("startBtn").addEventListener('click', startGame);
-    $("playerName").addEventListener('keydown', e=>{ if(e.key==='Enter') startGame(); });
-    $("againBtn").addEventListener('click', ()=>{ $("finishOverlay").style.display='none'; shots=0; goals=0; resetBall(); updateHUD(); });
-
-    function startGame(){ playerName = $("playerName").value.trim() || 'بازیکن'; shots=0; goals=0; updateHUD(); resetBall(); $("startOverlay").style.display='none'; $("playerName").blur(); }
-
-    updateHUD();
+    update();
   </script>
-
-  <!-- Persian font for better look -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&display=swap" rel="stylesheet">
 </body>
 </html>
+
