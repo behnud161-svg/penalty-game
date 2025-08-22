@@ -1,140 +1,109 @@
-<!DOCTYPE html>
-<html lang="fa">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Penalty Game</title>
-  <style>
-    body {
-      text-align: center;
-      background: #f0f0f0;
-      font-family: sans-serif;
-    }
-    canvas {
-      background: #a3d977;
-      display: block;
-      margin: 20px auto;
-      border: 3px solid #333;
-      border-radius: 10px;
-    }
-    #scoreboard {
-      font-size: 20px;
-      margin: 10px;
-    }
-  </style>
-</head>
-<body>
-  <h1>🚀 بازی پنالتی</h1>
-  <div id="scoreboard">گل‌ها: 0 | شانس‌ها: 5</div>
-  <canvas id="gameCanvas" width="500" height="400"></canvas>
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+  let goals = 0;
+  let chances = 5;
 
-    let goals = 0;
-    let chances = 5;
+  const goal = { x: 150, y: 50, w: 200, h: 40 };
 
-    const goal = { x: 150, y: 50, w: 200, h: 40 };
+  const ball = {
+    x: canvas.width / 2,
+    y: canvas.height - 30,
+    r: 10,
+    dx: 0,
+    dy: 0,
+    inAir: false
+  };
 
-    const ball = {
-      x: canvas.width / 2,
-      y: canvas.height - 30,
-      r: 10,
-      dx: 0,
-      dy: 0,
-      inAir: false
-    };
+  function resetBall() {
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height - 30;
+    ball.dx = 0;
+    ball.dy = 0;
+    ball.inAir = false;
+  }
 
-    function drawGoal() {
-      ctx.fillStyle = "white";
-      ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
-      ctx.strokeStyle = "black";
-      ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
-    }
+  function updateScoreboard() {
+    document.getElementById("scoreboard").innerText =
+      `گل‌ها: ${goals} | شانس‌ها: ${chances}`;
+  }
 
-    function drawBall() {
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-      ctx.fillStyle = "black";
-      ctx.fill();
-      ctx.closePath();
-    }
+  function drawGoal() {
+    ctx.fillStyle = "white";
+    ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+  }
 
-    function resetBall() {
-      ball.x = canvas.width / 2;
-      ball.y = canvas.height - 30;
-      ball.dx = 0;
-      ball.dy = 0;
-      ball.inAir = false;
-    }
+  function drawBall() {
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+    ctx.fillStyle = "black";
+    ctx.fill();
+    ctx.closePath();
+  }
 
-    function updateScoreboard() {
-      document.getElementById("scoreboard").innerText =
-        `گل‌ها: ${goals} | شانس‌ها: ${chances}`;
-    }
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGoal();
+    drawBall();
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawGoal();
-      drawBall();
+    if (ball.inAir) {
+      ball.x += ball.dx;
+      ball.y += ball.dy;
 
-      if (ball.inAir) {
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-
-        // گل
-        if (
-          ball.x > goal.x &&
-          ball.x < goal.x + goal.w &&
-          ball.y - ball.r < goal.y + goal.h
-        ) {
-          goals++;
-          chances--;
-          ball.inAir = false;
-          updateScoreboard();
-          setTimeout(resetBall, 1000);
-        }
-
-        // تیرک
-        if (
-          (ball.x + ball.r > goal.x && ball.x - ball.r < goal.x && ball.y < goal.y + goal.h) ||
-          (ball.x - ball.r < goal.x + goal.w && ball.x + ball.r > goal.x + goal.w && ball.y < goal.y + goal.h)
-        ) {
-          chances--;
-          ball.inAir = false;
-          updateScoreboard();
-          setTimeout(resetBall, 1000);
-        }
-
-        // بیرون رفتن
-        if (ball.y < 0 || ball.x < 0 || ball.x > canvas.width) {
-          chances--;
-          ball.inAir = false;
-          updateScoreboard();
-          setTimeout(resetBall, 1000);
-        }
+      // گل
+      if (
+        ball.x > goal.x &&
+        ball.x < goal.x + goal.w &&
+        ball.y - ball.r < goal.y + goal.h
+      ) {
+        goals++;
+        chances--;
+        ball.inAir = false;
+        updateScoreboard();
+        setTimeout(resetBall, 1000);
       }
 
-      requestAnimationFrame(draw);
+      // تیرک
+      if (
+        (ball.x + ball.r > goal.x && ball.x - ball.r < goal.x && ball.y < goal.y + goal.h) ||
+        (ball.x - ball.r < goal.x + goal.w && ball.x + ball.r > goal.x + goal.w && ball.y < goal.y + goal.h)
+      ) {
+        chances--;
+        ball.inAir = false;
+        updateScoreboard();
+        setTimeout(resetBall, 1000);
+      }
+
+      // بیرون رفتن
+      if (ball.y < 0 || ball.x < 0 || ball.x > canvas.width) {
+        chances--;
+        ball.inAir = false;
+        updateScoreboard();
+        setTimeout(resetBall, 1000);
+      }
     }
 
-    canvas.addEventListener("click", (e) => {
-      if (!ball.inAir && chances > 0) {
-        const rect = canvas.getBoundingClientRect();
-        const targetX = e.clientX - rect.left;
-        const targetY = e.clientY - rect.top;
+    requestAnimationFrame(draw);
+  }
 
-        const angle = Math.atan2(targetY - ball.y, targetX - ball.x);
-        ball.dx = Math.cos(angle) * 5;
-        ball.dy = Math.sin(angle) * 5;
-        ball.inAir = true;
-      }
-    });
+  canvas.addEventListener("click", (e) => {
+    if (!ball.inAir && chances > 0) {
+      const rect = canvas.getBoundingClientRect();
+      const targetX = e.clientX - rect.left;
+      const targetY = e.clientY - rect.top;
 
-    updateScoreboard();
-    draw();
-  </script>
-</body>
-</html>
+      const angle = Math.atan2(targetY - ball.y, targetX - ball.x);
+      ball.dx = Math.cos(angle) * 5;
+      ball.dy = Math.sin(angle) * 5;
+      ball.inAir = true;
+    }
+  });
+
+  updateScoreboard();
+  draw();
+</script>
+
 
